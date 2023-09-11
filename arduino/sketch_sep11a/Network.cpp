@@ -1,16 +1,24 @@
 #include "Network.h"
-const char* WIFI_SSID = "0123";
-const char* WIFI_PASSWORD = "00000000";
+#include "NTPClient.h"
+#include "WiFiUdp.h"
+const char* WIFI_SSID = "R-11";
+const char* WIFI_PASSWORD = "RepublicSukatani11";
 
 #define API_KEY "AIzaSyBVBXdwmnNYiv4wmzsAAukSlq6o6VaNszM"
 #define FIREBASE_PROJECT_ID "bspoint"
 #define USER_EMAIL "ilhamaulana24@gmail.com"
 #define USER_PASSWORD "BsPointFirebase123"
 
-String id = "IAJYrLix9U4MiGssZmxF";
-String number = "11";
+String idBus = "IAJYrLix9U4MiGssZmxF";
+String idList = "0v9ABoP0PukSrI9X9mbp";
+String busNumber = "14";
 
 static Network* instance = NULL;
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
+
+String timestamp;
 
 Network::Network() {
   instance = this;
@@ -31,6 +39,9 @@ void Network::initWiFi() {
   Serial.print("Connected! Local IP: ");
   Serial.println(WiFi.localIP());
 
+  Serial.print("Intializing NTP");
+  timeClient.begin();
+
   Serial.print("Initializing Firebase.");
   instance->firebaseInit();
 
@@ -50,7 +61,11 @@ void Network::firebaseInit() {
   Firebase.begin(&config, &auth);
 }
 
-void Network::firestoreDataUpdate(double longitude, double latitude) {
+void Network::firestoreUpdatePosition(double longitude, double latitude) {
+  while (!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+
   while (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
     Serial.print(".");
     instance->initWiFi();
@@ -59,27 +74,59 @@ void Network::firestoreDataUpdate(double longitude, double latitude) {
   }
 
   if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
-    Serial.print("Updating bus position");
+    String documentPath = "buses/" + idBus;
 
-    String documentPath = "buses/"+id;
-
-    Serial.print(documentPath);
+    timestamp = timeClient.getFormattedDate();
+    Serial.print(timestamp);
 
     FirebaseJson content;
 
+    content.set("fields/busNumber/stringValue", busNumber);
     content.set("fields/position/geoPointValue/latitude", latitude);
     content.set("fields/position/geoPointValue/longitude", longitude);
+    content.set("fields/lastUpdate/timestampValue", timestamp);
 
-    if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "position")) {
+    if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "busNumber, position, lastUpdate")) {
       Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
       return;
     } else {
       Serial.println(fbdo.errorReason());
     }
+  }
+}
 
-    if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-      Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-      return;
+void Network::firestoreUpdateCapacity(bool increment) {
+  while (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
+    Serial.print(".");
+    instance->initWiFi();
+
+    delay(1000);
+  }
+
+  if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
+    String documentPath = "listbust/" + idList;
+
+    if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
+      FirebaseJson payload;
+      payload.setJsonData(fbdo.payload().c_str());
+
+      FirebaseJsonData jsonData;
+      payload.get(jsonData, "fields/capacity/integerValue", true);
+
+      int prevCapacity = jsonData.intValue;
+
+      FirebaseJson content;
+
+      if (!increment && prevCapacity > 0) content.set("fields/capacity/integerValue", prevCapacity - 1);
+      else if (increment) content.set("fields/capacity/integerValue", prevCapacity + 1);
+      else content.set("fields/capacity/integerValue", prevCapacity);
+
+      if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "capacity")) {
+        Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+        return;
+      } else {
+        Serial.println(fbdo.errorReason());
+      }
     } else {
       Serial.println(fbdo.errorReason());
     }

@@ -14,7 +14,8 @@ private:
 public:
   Network();
   void initWiFi();
-  void firestoreDataUpdate(double longitude, double latitude);
+  void firestoreUpdatePosition(double longitude, double latitude);
+  void firestoreUpdateCapacity(bool increment);
 };
 
 
