@@ -1,8 +1,8 @@
 #include "Network.h"
 #include "NTPClient.h"
 #include "WiFiUdp.h"
-const char* WIFI_SSID = "R-11";
-const char* WIFI_PASSWORD = "RepublicSukatani11";
+const char* WIFI_SSID = "0123";
+const char* WIFI_PASSWORD = "00000000";
 
 #define API_KEY "AIzaSyBVBXdwmnNYiv4wmzsAAukSlq6o6VaNszM"
 #define FIREBASE_PROJECT_ID "bspoint"
@@ -39,17 +39,17 @@ void Network::initWiFi() {
   Serial.print("Connected! Local IP: ");
   Serial.println(WiFi.localIP());
 
-  Serial.print("Intializing NTP");
+  Serial.print("Intializing NTP. ");
   timeClient.begin();
 
-  Serial.print("Initializing Firebase.");
+  Serial.print("Initializing Firebase. ");
   instance->firebaseInit();
 
   while (!Firebase.ready()) {
     Serial.print(".");
   }
 
-  Serial.print("Connected to Firebase!");
+  Serial.print("Connected to Firebase! ");
 }
 
 void Network::firebaseInit() {
