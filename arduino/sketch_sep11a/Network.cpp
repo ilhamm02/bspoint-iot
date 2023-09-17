@@ -93,7 +93,7 @@ void Network::firestoreUpdatePosition(double longitude, double latitude) {
 }
 
 void Network::firestoreUpdateCapacity(String idBus, bool increment) {
-  while (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
+  while (WiFi.status() != WL_CONNECTED && !Firebase.ready()) {
     Serial.print(".");
     instance->initWiFi();
 
@@ -131,7 +131,7 @@ void Network::firestoreUpdateCapacity(String idBus, bool increment) {
 }
 
 void Network::firestoreUpdatePassenger(String tagId) {
-  while (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
+  while (WiFi.status() != WL_CONNECTED && !Firebase.ready()) {
     Serial.print(".");
     instance->initWiFi();
 
