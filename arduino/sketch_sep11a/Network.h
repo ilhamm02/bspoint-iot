@@ -15,7 +15,8 @@ public:
   Network();
   void initWiFi();
   void firestoreUpdatePosition(double longitude, double latitude);
-  void firestoreUpdateCapacity(bool increment);
+  void firestoreUpdateCapacity(String idBus, bool increment);
+  void firestoreUpdatePassenger(String tagId);
 };
 
 
