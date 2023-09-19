@@ -1,8 +1,8 @@
 #include "Network.h"
 #include "NTPClient.h"
 #include "WiFiUdp.h"
-const char* WIFI_SSID = "R-11";
-const char* WIFI_PASSWORD = "RepublicSukatani11";
+const char* WIFI_SSID = "0123";
+const char* WIFI_PASSWORD = "00000000";
 
 #define API_KEY "AIzaSyBVBXdwmnNYiv4wmzsAAukSlq6o6VaNszM"
 #define FIREBASE_PROJECT_ID "bspoint"
@@ -84,7 +84,7 @@ void Network::firestoreUpdatePosition(double longitude, double latitude) {
     content.set("fields/lastUpdate/timestampValue", timestamp);
 
     if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "position, lastUpdate")) {
-      Serial.print("Updated bus position");
+      Serial.println("Updated bus position");
       return;
     } else {
       Serial.println(fbdo.errorReason());
@@ -119,7 +119,7 @@ void Network::firestoreUpdateCapacity(String idBus, bool increment) {
       else content.set("fields/capacity/integerValue", prevCapacity);
 
       if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "capacity")) {
-        Serial.print("Updated bus capacity");
+        Serial.println("Updated bus capacity");
         return;
       } else {
         Serial.println(fbdo.errorReason());
@@ -169,7 +169,7 @@ void Network::firestoreUpdatePassenger(String tagId) {
       content.set("fields/inBusNumber/stringValue", currentBus);
 
       if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "inBusNumber")) {
-        Serial.print("Updated passenger");
+        Serial.println("Updated passenger");
         return;
       } else {
         Serial.println(fbdo.errorReason());
