@@ -20,9 +20,6 @@ PN532 nfc(pn532swhsu);
 String tagId = "None", dispTag = "None";
 byte nuidPICC[4];
 
-const int maxCapacity = 100;
-String* passengers = new String[maxCapacity];
-
 void setup(void) {
   Serial.begin(9600);
   GPSSerial.begin(9600);

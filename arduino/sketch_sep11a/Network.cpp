@@ -64,118 +64,119 @@ void Network::firestoreUpdatePosition(double longitude, double latitude) {
     timeClient.forceUpdate();
   }
 
-  while (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
-    Serial.print(".");
-    instance->initWiFi();
+  bool updated = false;
+  while (updated != true) {
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
+      String documentPath = "buses/" + idBus;
 
-    delay(1000);
-  }
+      timestamp = timeClient.getFormattedDate();
+      Serial.print(timestamp);
 
-  if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
-    String documentPath = "buses/" + idBus;
+      FirebaseJson content;
 
-    timestamp = timeClient.getFormattedDate();
-    Serial.print(timestamp);
+      content.set("fields/position/geoPointValue/latitude", latitude);
+      content.set("fields/position/geoPointValue/longitude", longitude);
+      content.set("fields/lastUpdate/timestampValue", timestamp);
 
-    FirebaseJson content;
-
-    content.set("fields/position/geoPointValue/latitude", latitude);
-    content.set("fields/position/geoPointValue/longitude", longitude);
-    content.set("fields/lastUpdate/timestampValue", timestamp);
-
-    if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "position, lastUpdate")) {
-      Serial.println("Updated bus position");
-      return;
+      if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "position, lastUpdate")) {
+        Serial.println("Updated bus position");
+        updated = true;
+        return;
+      } else {
+        Serial.println(fbdo.errorReason());
+      }
     } else {
-      Serial.println(fbdo.errorReason());
+      Serial.print(".");
+      instance->initWiFi();
     }
   }
 }
 
 void Network::firestoreUpdateCapacity(String idBus, bool increment) {
-  while (WiFi.status() != WL_CONNECTED && !Firebase.ready()) {
-    Serial.print(".");
-    instance->initWiFi();
+  bool updated = false;
+  while (updated != true) {
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
+      String documentPath = "buses/" + idBus;
 
-    delay(1000);
-  }
+      if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
+        FirebaseJson payload;
+        payload.setJsonData(fbdo.payload().c_str());
 
-  if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
-    String documentPath = "buses/" + idBus;
+        FirebaseJsonData jsonData;
+        payload.get(jsonData, "fields/capacity/integerValue", true);
 
-    if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
-      FirebaseJson payload;
-      payload.setJsonData(fbdo.payload().c_str());
+        int prevCapacity = jsonData.intValue;
 
-      FirebaseJsonData jsonData;
-      payload.get(jsonData, "fields/capacity/integerValue", true);
+        FirebaseJson content;
 
-      int prevCapacity = jsonData.intValue;
+        if (!increment && prevCapacity > 0) content.set("fields/capacity/integerValue", prevCapacity - 1);
+        else if (increment) content.set("fields/capacity/integerValue", prevCapacity + 1);
+        else content.set("fields/capacity/integerValue", prevCapacity);
 
-      FirebaseJson content;
-
-      if (!increment && prevCapacity > 0) content.set("fields/capacity/integerValue", prevCapacity - 1);
-      else if (increment) content.set("fields/capacity/integerValue", prevCapacity + 1);
-      else content.set("fields/capacity/integerValue", prevCapacity);
-
-      if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "capacity")) {
-        Serial.println("Updated bus capacity");
-        return;
+        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "capacity")) {
+          Serial.println("Updated bus capacity");
+          updated = true;
+          return;
+        } else {
+          Serial.println(fbdo.errorReason());
+        }
       } else {
         Serial.println(fbdo.errorReason());
       }
     } else {
-      Serial.println(fbdo.errorReason());
+      Serial.print(".");
+      instance->initWiFi();
     }
   }
 }
 
 void Network::firestoreUpdatePassenger(String tagId) {
-  while (WiFi.status() != WL_CONNECTED && !Firebase.ready()) {
-    Serial.print(".");
-    instance->initWiFi();
+  bool updated = false;
+  while (updated != true) {
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
+      String documentPath = "passengers/" + tagId;
 
-    delay(1000);
-  }
+      if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
+        FirebaseJson payload;
+        payload.setJsonData(fbdo.payload().c_str());
 
-  if (WiFi.status() == WL_CONNECTED && Firebase.ready()) {
-    String documentPath = "passengers/" + tagId;
+        FirebaseJsonData jsonData;
+        payload.get(jsonData, "fields/inBusNumber/stringValue", true);
 
-    if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
-      FirebaseJson payload;
-      payload.setJsonData(fbdo.payload().c_str());
+        String currentBus = jsonData.stringValue;
 
-      FirebaseJsonData jsonData;
-      payload.get(jsonData, "fields/inBusNumber/stringValue", true);
+        FirebaseJson content;
 
-      String currentBus = jsonData.stringValue;
-
-      FirebaseJson content;
-
-      if (currentBus.length() > 0) {
-        if (currentBus == idBus) {
-          instance->firestoreUpdateCapacity(idBus, false);
-          currentBus = "";
+        if (currentBus.length() > 0) {
+          if (currentBus == idBus) {
+            instance->firestoreUpdateCapacity(idBus, false);
+            currentBus = "";
+          } else {
+            instance->firestoreUpdateCapacity(currentBus, false);
+            currentBus = idBus;
+            instance->firestoreUpdateCapacity(currentBus, true);
+          }
         } else {
-          instance->firestoreUpdateCapacity(currentBus, false);
+          instance->firestoreUpdateCapacity(idBus, true);
           currentBus = idBus;
-          instance->firestoreUpdateCapacity(currentBus, true);
         }
-      } else {
-        instance->firestoreUpdateCapacity(idBus, true);
-        currentBus = idBus;
-      }
 
-      content.set("fields/inBusNumber/stringValue", currentBus);
+        content.set("fields/inBusNumber/stringValue", currentBus);
 
-      if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "inBusNumber")) {
-        Serial.println("Updated passenger");
-        return;
+        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), "inBusNumber")) {
+          Serial.println("Updated passenger");
+          updated = true;
+          return;
+        } else {
+          Serial.println(fbdo.errorReason());
+          delay(1000);
+        }
       } else {
         Serial.println(fbdo.errorReason());
       }
     } else {
-      Serial.println(fbdo.errorReason());
+      Serial.print(".");
+      instance->initWiFi();
     }
   }
 }
