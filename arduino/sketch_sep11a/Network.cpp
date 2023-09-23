@@ -9,7 +9,7 @@ const char* WIFI_PASSWORD = "00000000";
 #define USER_EMAIL "ilhamaulana24@gmail.com"
 #define USER_PASSWORD "BsPointFirebase123"
 
-String idBus = "IAJYrLix9U4MiGssZmxF";
+String idBus = "BS-14";
 
 static Network* instance = NULL;
 
@@ -70,7 +70,6 @@ void Network::firestoreUpdatePosition(double longitude, double latitude) {
       String documentPath = "buses/" + idBus;
 
       timestamp = timeClient.getFormattedDate();
-      Serial.print(timestamp);
 
       FirebaseJson content;
 

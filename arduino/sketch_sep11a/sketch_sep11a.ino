@@ -10,8 +10,8 @@
 
 Network* network;
 
-SoftwareSerial GPSSerial(12, 13); // RX, TX
-SoftwareSerial NFCSerial(5, 4); //RX, TX
+SoftwareSerial GPSSerial(12, 13);  // RX, TX
+SoftwareSerial NFCSerial(5, 4);    //RX, TX
 
 TinyGPSPlus gps;
 
@@ -24,31 +24,37 @@ void setup(void) {
   Serial.begin(9600);
   GPSSerial.begin(9600);
 
-  initNetwork();
 
   nfc.begin();
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata) {
     Serial.print("Didn't Find PN53x Module");
-    while (1);
+    while (1)
+      ;
   }
   nfc.SAMConfig();
+
+  initNetwork();
 
   pinMode(LED_NFC, OUTPUT);
   pinMode(LED_GPS, OUTPUT);
 }
 
 void loop() {
-  while (GPSSerial.available() > 0) {
+  if (GPSSerial.available() > 0) {
     gps.encode(GPSSerial.read());
+    // Serial.write(GPSSerial.read());
+    // Serial.println("CHECKING");
     if (gps.location.isUpdated()) {
+      readNFC();
+      Serial.println("UPDATING LOCATION");
       digitalWrite(LED_GPS, HIGH);
       network->firestoreUpdatePosition(gps.location.lng(), gps.location.lat());
       digitalWrite(LED_GPS, LOW);
-    }else{
+    } else {
+      // Serial.println("NOT UPDATED");
       digitalWrite(LED_GPS, LOW);
     }
-    readNFC();
   }
 }
 
@@ -72,7 +78,6 @@ void readNFC() {
     Serial.println(tagId);
     digitalWrite(LED_NFC, HIGH);
     network->firestoreUpdatePassenger(tagId);
-    delay(1000);
     digitalWrite(LED_NFC, LOW);
   }
 }
