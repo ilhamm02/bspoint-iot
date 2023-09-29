@@ -1,8 +1,8 @@
 #include "Network.h"
 #include "NTPClient.h"
 #include "WiFiUdp.h"
-const char* WIFI_SSID = "0123";
-const char* WIFI_PASSWORD = "00000000";
+const char* WIFI_SSID = "oi coffee & eatery 2 & 3";
+const char* WIFI_PASSWORD = "oicoffee123";
 
 #define API_KEY "AIzaSyBVBXdwmnNYiv4wmzsAAukSlq6o6VaNszM"
 #define FIREBASE_PROJECT_ID "bspoint"

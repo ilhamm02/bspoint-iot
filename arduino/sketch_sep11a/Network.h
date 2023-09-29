@@ -1,6 +1,3 @@
-#ifndef Network_H_
-#define Network_H_
-
 #include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
 class Network{
@@ -18,6 +15,3 @@ public:
   void firestoreUpdateCapacity(String idBus, bool increment);
   void firestoreUpdatePassenger(String tagId);
 };
-
-
-#endif

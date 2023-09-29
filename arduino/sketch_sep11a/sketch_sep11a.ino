@@ -19,6 +19,7 @@ PN532_SWHSU pn532swhsu(NFCSerial);
 PN532 nfc(pn532swhsu);
 String tagId = "None", dispTag = "None";
 byte nuidPICC[4];
+int updateCount = 0;
 
 void setup(void) {
   Serial.begin(9600);
@@ -47,10 +48,15 @@ void loop() {
     // Serial.println("CHECKING");
     if (gps.location.isUpdated()) {
       readNFC();
-      Serial.println("UPDATING LOCATION");
-      digitalWrite(LED_GPS, HIGH);
-      network->firestoreUpdatePosition(gps.location.lng(), gps.location.lat());
-      digitalWrite(LED_GPS, LOW);
+      updateCount += 1;
+      if(updateCount >= 10){
+        Serial.println("UPDATING LOCATION");
+        digitalWrite(LED_GPS, HIGH);
+        network->firestoreUpdatePosition(gps.location.lng(), gps.location.lat());
+        digitalWrite(LED_GPS, LOW);
+
+        updateCount = 0;
+      }
     } else {
       // Serial.println("NOT UPDATED");
       digitalWrite(LED_GPS, LOW);
